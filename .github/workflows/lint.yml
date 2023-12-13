@@ -1,0 +1,46 @@
+name: Lint
+
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/lint.yml'
+      - 'src/**/*.ts'
+      - 'src/**/*.tsx'
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [ 18.x ]
+        # bun-version: [ latest ]
+    steps:
+      - uses: actions/checkout@v3
+
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          cache-dependency-path: '**/package-lock.json'
+
+
+      # - name: Setup Bun ${{ matrix.bun-version }}
+      #   uses: oven-sh/setup-bun@v1
+      #   with:
+      #     bun-version: ${{ matrix.bun-version }}
+  
+
+      - run: npm ci
+      # - run: bun install      
+      - run: npx tsc
+      # - run: bunx tsc

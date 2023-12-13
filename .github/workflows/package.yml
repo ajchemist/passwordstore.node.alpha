@@ -1,0 +1,124 @@
+name: Package
+
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/package.yml'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'src/**/*.ts'
+      - 'src/**/*.tsx'
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+
+env:
+  node-version: '18'
+  bun-version: 'latest'
+
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Generate GPG Key
+        run: |
+            cat >foo <<EOF
+            %echo Generating a basic OpenPGP key
+            Key-Type: default
+            Subkey-Type: default
+            Name-Real: GitHub
+            Name-Comment: CI key
+            Name-Email: ci@example.com
+            Expire-Date: 0
+            %no-protection
+            %commit
+            %echo done
+            EOF
+            gpg --batch --generate-key foo
+
+
+      - name: Initialize pass
+        run: |
+            GPG_KEY_ID=$(gpg --list-secret-keys --with-colons | grep sec | cut -d: -f5)
+            pass init $GPG_KEY_ID
+
+
+      - name: Insert password
+        run: |
+            pass insert -m test/simple <<< $'123456\n123456'
+
+
+      # setup-node action creates an .npmrc file on the runner
+      - name: Setup Node.js ${{ env.node-version }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ env.node-version }}
+          cache: 'npm'
+          cache-dependency-path: '**/package-lock.json'
+
+      - run: npm ci
+      - run: npm run test
+
+  package:
+    name: Package
+    needs: [ test ]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+
+      # setup-node action creates an .npmrc file on the runner
+      - name: Setup Node.js ${{ env.node-version }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ env.node-version }}
+          cache: 'npm'
+          cache-dependency-path: '**/package-lock.json'
+          registry-url: 'https://registry.npmjs.org/'
+          scope: '@magneto-labs'
+
+    #   - name: Setup Bun ${{ env.bun-version }}
+    #     uses: oven-sh/setup-bun@v1
+    #     with:
+    #       bun-version: ${{ env.bun-version }}
+
+
+      - run: npm ci
+      - run: npm run build
+      - run: |
+          npm version "$(date +%Y).$(date +%j).$(( $(date +%s) % 86400 ))" --no-commit-hooks --no-git-tag-version
+      - run: npm pack
+      - run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+
+      - name: Push a commit using the built-in token
+        run: |
+          git pull origin main
+          git config --local user.name $GITHUB_ACTOR
+          git config --local user.email $(git --no-pager show --format="<%ae>" -s HEAD)
+          if git status | grep -q "working tree clean"
+            echo "No changes since last run"
+          then
+            git add -- package.json package-lock.json
+            git commit -m "$(cat package.json | jq -r '.version') [package.yml] [ci skip]"
+            git remote -v
+            git push
+          fi
+
+
+      - name: Discord action job digest notification
+        uses: sarisia/actions-status-discord@v1
+        if: always() # Pick up events even if the job fails or is canceled.
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
