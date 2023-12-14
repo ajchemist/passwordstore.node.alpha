@@ -1,7 +1,7 @@
 {
   "name": "@magneto-labs/passwordstore.node.alpha",
   "main": "dist/index.js",
-  "module": "dist/index.js",
+  "module": "module/index.js",
   "devDependencies": {
     "@types/jest": "^29.5.11",
     "bun-types": "latest",
@@ -13,13 +13,15 @@
   },
   "scripts": {
     "test": "jest",
-    "build": "tsc --noEmit false --emitDeclarationOnly false"
+    "build:cjs": "tsc --noEmit false --emitDeclarationOnly false -p tsconfig.cjs.json",
+    "build:esm": "tsc --noEmit false --emitDeclarationOnly false"
   },
   "exports": {
     "./*": {
-      "require": "./dist/src/*",
-      "import": "./dist/src/*",
-      "types": "./dist/src/*"
+      "default": "./dist/src/*.js",
+      "require": "./dist/src/*.js",
+      "import": "./module/src/*.js",
+      "types": "./module/src/*.d.ts"
     }
   },
   "version": "2023.348.31472"
