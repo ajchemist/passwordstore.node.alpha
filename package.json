@@ -16,6 +16,10 @@
     "build:cjs": "tsc --noEmit false --emitDeclarationOnly false -p tsconfig.cjs.json",
     "build:esm": "tsc --noEmit false --emitDeclarationOnly false"
   },
+  "files": [
+    "dist/",
+    "module/"
+  ],
   "exports": {
     "./*": {
       "default": "./dist/src/*.js",
