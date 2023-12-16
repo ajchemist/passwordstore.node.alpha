@@ -1,10 +1,8 @@
 {
   "name": "@magneto-labs/passwordstore.node.alpha",
-  "main": "dist/index.js",
-  "module": "module/index.js",
   "devDependencies": {
     "@types/jest": "^29.5.11",
-    "bun-types": "latest",
+    "@types/node": "^20.10.4",
     "jest": "^29.7.0",
     "ts-jest": "^29.1.1"
   },
@@ -13,19 +11,20 @@
   },
   "scripts": {
     "test": "jest",
-    "build:cjs": "tsc --noEmit false --emitDeclarationOnly false -p tsconfig.cjs.json",
-    "build:esm": "tsc --noEmit false --emitDeclarationOnly false"
+    "clean": "rm -rf dist",
+    "build:type": "tsc --noEmit false --declaration --emitDeclarationOnly --outDir dist/type",
+    "build:esm": "tsc --noEmit false",
+    "build:cjs": "tsc --noEmit false --module commonjs --moduleResolution node --outDir dist/cjs"
   },
   "files": [
-    "dist/",
-    "module/"
+    "dist/"
   ],
   "exports": {
     "./*": {
-      "default": "./dist/src/*.js",
-      "require": "./dist/src/*.js",
-      "import": "./module/src/*.js",
-      "types": "./module/src/*.d.ts"
+      "default": "./dist/cjs/*.js",
+      "require": "./dist/cjs/*.js",
+      "import": "./dist/esm/*.js",
+      "types": "./dist/type/*.d.ts"
     }
   },
   "version": "2023.349.27400"

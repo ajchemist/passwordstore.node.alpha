@@ -94,8 +94,9 @@ jobs:
 
       - run: npm ci
       - run: |
-          npm run build:cjs
+          npm run build:type
           npm run build:esm
+          npm run build:cjs
       - run: |
           npm version "$(date +%Y).$(date +%j).$(( $(date +%s) % 86400 ))" --no-commit-hooks --no-git-tag-version
       - run: npm pack
